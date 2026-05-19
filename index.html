@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>OBS Slide Switcher</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    margin: 0;
+    background: transparent;
+    overflow: hidden;
+    font-family: 'Courier New', monospace;
+  }
+
+  #slide {
+    width: 100vw;
+    height: 100vh;
+    object-fit: contain;
+    opacity: 0;
+    transition: opacity 1s ease;
+    position: absolute;
+    top: 0; left: 0;
+  }
+
+  #error {
+    display: none;
+    position: fixed;
+    bottom: 52px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.8);
+    color: #ff4466;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    padding: 6px 14px;
+    border-radius: 0;
+    border: 1px solid rgba(255,68,102,0.5);
+    backdrop-filter: blur(8px);
+    white-space: nowrap;
+    z-index: 100;
+    pointer-events: none;
+  }
+
+  #subtitle {
+    display: none;
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.75);
+    color: #ffffff;
+    font-size: 16px;
+    letter-spacing: 0.05em;
+    padding: 8px 14px;
+    border-radius: 0;
+    border: 1px solid rgba(255,255,255,0.2);
+    backdrop-filter: blur(8px);
+    white-space: nowrap;
+    z-index: 100;
+    cursor: pointer;
+    pointer-events: auto;
+  }
+</style>
+</head>
+<body>
+
+<img id="slide" src="" alt="">
+
+<div id="error"></div>
+<div id="subtitle" aria-live="polite"></div>
+
+<script>
+const subtitlesEnabled = true; // set false to disable subtitle display
+const players = [
+  {
+    name: "Klaxon",
+    file: "Klaxon.png",
+    aliases: [
+      "klaxon", "claxon", "clax on", "clacks on", "klacks on", "clacks", "klacks", "clacton", "klacton",
+      "glaxon", "flaxon", "klaxon siren", "claxon siren", "claxon x", "claxton", "clarkson"
+    ]
+  },
+  {
+    name: "Nipsy",
+    file: "Nipsy.png",
+    aliases: [
+      "nipsy", "nipsey", "nipsee", "nipsie", "nipsey hussle", "nipsey hustle", "nippy",
+      "dipsy", "nip si", "nip see", "nip sea"
+    ]
+  },
+  {
+    name: "Onyx",
+    file: "Onyx.png",
+    aliases: [
+      "onyx", "onix", "oni x", "on yx", "one x", "annex", "onyx stone"
+    ]
+  },
+  {
+    name: "Remus",
+    file: "Remus.png",
+    aliases: [
+      "remus", "remix", "remis", "reemas", "reemis", "reemus", "remas", "raymus",
+      "ray-mus", "reh-mus"
+    ]
+  },
+  {
+    name: "Tiama",
+    file: "Tiama.png",
+    aliases: [
+      "tiama", "tiana", "tianna", "tiarra", "teama", "tyama", "tiara", "tiamo",
+      "te ama", "tea ama", "tee ah ma", "tee ah mah", "tea ah mah", "tea amuh"
+    ]
+  },
+  {
+    name: "Twig",
+    file: "Twig.png",
+    aliases: ["twig", "twigs", "twigg", "twiggy", "tig", "tug", "twink"]
+  },
+  {
+    name: "Duke",
+    file: "Duke.png",
+    aliases: ["duke", "dukes", "dyke", "dook", "doak", "duke man"]
+  },
+  {
+    name: "Zemk",
+    file: "Zemk.png",
+    aliases: ["zemk", "zemek", "zem k", "zem", "zem-k", "zack", "zank", "zach",
+     "duergar", "dooger", "do a girl", "do egger", "duggar", "zinc"
+    ]
+  },
+  {
+    name: "Nihiloor",
+    file: "Nihiloor.png",
+    aliases: [
+      "nihiloor", "nihilur", "nihilore", "nilhor", "nihilar", "nihil or",
+      "nia lore", "nealore", "nealor", "neolor", "nia laura", "niallor", "niello", "niallore", "michelier",
+      "ni hallor", "naylor", "niallo", "niella", "me and laura", "mia the lord", "mind flayer", "mind flare", "mind player",
+      "mind flair"
+    ]
+  },
+  {
+    name: "Krentz",
+    file: "Krentz.png",
+    aliases: [
+      "krentz", "crentz", "krent", "crent", "krent z",
+     "cramps", "prince", "credits", "grants", "krantz", "krant", "kr", "cr",
+      "crunch", "krents", "bandit"
+    ]
+  },
+  {
+    name: "Kenku",
+    file: "Kenku.png",
+    aliases: ["kenku", "kenkoo", "kenkuh", "ken coo", "ken cue", "cancun", "thank you", "canku",
+     "cancú", "ken"
+    ]
+  },
+  {
+    name: "Intellect Devourer",
+    file: "IntellectDevourer.png",
+    aliases: ["intellect devourer", "intellectdevourer", "intellect devour", "intellect-de-vourer", "intellect devowerer",
+      "intellect of our", "been electivire", "intellective hour", "in select devour", "flex devourer"
+    ]
+  },
+  {
+    name: "Grum'shar",
+    file: "Grum'shar.png",
+    aliases: [
+      "grumshar", "grum shar", "grum'shar", "grum shaar", "grum shaar",
+      "grimshar", "grum scar", "grum's car", "grandma sure", "gramma's car",
+      "grub marsh", "crumb jar", "drum star", "gum scar", "drumshare", "i'm sure",
+      "im sure", "sure", "i am sure", "i am shore", "i'm shure",
+      "grandma char", "grumpar", "drum char", "grimshaw", "grumshaw", "gramsher", "i'm sure",
+       "come shower", "ground shower", "gum shower", "from char", "crimshaw", "grumsher",
+       "gremshire", "gr", "grump shark", "crumb shop", "ground shark", "grand shire", "grum shot", 
+       "orc", "ork"
+    ]
+  },
+  {
+    name: "GrayOoze",
+    file: "GrayOoze.png",
+    aliases: ["gray ooze", "grayooze", "grey ooze", "greyooze", "gray ooz", "gray owz",
+      "great news", "great ooze"
+    ]
+  },
+  {
+    name: "Goblin",
+    file: "Goblin.png",
+    aliases: ["goblin", "gob blin", "gob len", "gobblin"]
+  },
+  {
+    name: "Floon Blagmaar",
+    file: "FloonBlagmaar.png",
+    aliases: ["floon", "floon blagmaar", "floon blagmar", "flown blagmar", "flo on", "floon blamer", "flume", 
+      "flew in blackmar", "fluid", "fluent", "flown", "flynn", "flun", "fl", "flu"
+    ]
+  },
+  {
+    name: "Gazer",
+    file: "Gazer.png",
+    aliases: ["gazer", "gazers", "gaze her", "gaizer", "gazer monster", "geyser", "gaither", "gay zoo",
+    ]
+  },
+  {
+    name: "Xanathar",
+    file: "Xanathar.png",
+    aliases: ["xanathar", "xan a thar", "zannothar", "zanathar", "zanther", "xan", "santa", "xanathor", "xanathore", "xanathars",
+    "xanathar's"
+    ]
+  }
+];
+
+players.forEach((player, index) => {
+  player.number = index + 1;
+});
+
+document.addEventListener("keydown", (e) => {
+  const digit = e.key;
+  if (/^[0-9]$/.test(digit)) {
+    numberBuffer += digit;
+    if (numberBuffer.length > 2) {
+      numberBuffer = numberBuffer.slice(-2);
+    }
+    if (numberBufferTimeout) clearTimeout(numberBufferTimeout);
+    numberBufferTimeout = setTimeout(() => {
+      handleNumberInput(numberBuffer);
+      numberBuffer = "";
+      numberBufferTimeout = null;
+    }, 400);
+    if (numberBuffer.length === 2) {
+      handleNumberInput(numberBuffer);
+      numberBuffer = "";
+      if (numberBufferTimeout) {
+        clearTimeout(numberBufferTimeout);
+        numberBufferTimeout = null;
+      }
+    }
+    return;
+  }
+  if (numberBuffer) {
+    handleNumberInput(numberBuffer);
+    numberBuffer = "";
+    if (numberBufferTimeout) {
+      clearTimeout(numberBufferTimeout);
+      numberBufferTimeout = null;
+    }
+  }
+});
+
+const slide    = document.getElementById("slide");
+const errorEl  = document.getElementById("error");
+const subtitleEl = document.getElementById("subtitle");
+
+let hideTimeout = null;
+let subtitleTimeout = null;
+let numberBuffer = "";
+let numberBufferTimeout = null;
+
+function handleNumberInput(str) {
+  if (!str) return;
+  const num = parseInt(str, 10);
+  if (Number.isFinite(num) && num >= 1 && num <= players.length) {
+    const player = players[num - 1];
+    showSlide(player.file, player.name);
+  }
+}
+
+subtitleEl.addEventListener("click", async () => {
+  const text = subtitleEl.textContent || "";
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+    subtitleEl.textContent = "Copied!";
+    if (subtitleTimeout) clearTimeout(subtitleTimeout);
+    subtitleTimeout = setTimeout(() => {
+      subtitleEl.style.display = "none";
+    }, 1200);
+  } catch (err) {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textarea);
+  }
+});
+
+function showError(msg) {
+  errorEl.textContent = "⚠ " + msg;
+  errorEl.style.display = "block";
+}
+
+function setSubtitle(text, active = false) {
+  if (!subtitlesEnabled) return;
+  subtitleEl.textContent = text;
+  subtitleEl.style.display = "block";
+  subtitleEl.style.background = active ? "rgba(20,120,20,0.9)" : "rgba(0,0,0,0.75)";
+  subtitleEl.style.border = active ? "1px solid rgba(120,255,120,0.6)" : "1px solid rgba(255,255,255,0.2)";
+  if (subtitleTimeout) clearTimeout(subtitleTimeout);
+  subtitleTimeout = setTimeout(() => {
+    subtitleEl.style.display = "none";
+  }, 1800);
+}
+
+function showSlide(src, name = "") {
+  slide.src = src;
+  slide.alt = name;
+  slide.style.opacity = "1";
+  if (hideTimeout) clearTimeout(hideTimeout);
+  hideTimeout = setTimeout(() => {
+    slide.style.opacity = "0";
+  }, 10000);
+}
+
+
+
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+
+if (!SpeechRecognition) {
+  showError("SPEECH NOT SUPPORTED — use Chrome or Edge");
+} else {
+  recognition = new SpeechRecognition();
+  recognition.continuous     = true;
+  recognition.interimResults = true;
+  recognition.lang           = "en-US";
+
+  const autoRestart = true;
+
+  recognition.onend = () => {
+    if (autoRestart) {
+      try { recognition.start(); } catch(e) {}
+    }
+  };
+
+  recognition.onerror = (e) => {
+    if (e.error === "no-speech") return;
+    if (e.error === "not-allowed") { showError("MIC ACCESS DENIED"); return; }
+    showError("ERR: " + e.error.toUpperCase());
+  };
+
+  recognition.onresult = (e) => {
+    let interim = "";
+    let finalText = "";
+
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) finalText += t + " ";
+      else interim += t;
+    }
+
+    const combined = (finalText + " " + interim).toLowerCase().trim();
+    const normalized = (" " + combined.replace(/[^\w\s]/g, " ") + " ")
+      .replace(/\s+/g, " ");
+
+    let activated = false;
+    for (const player of players) {
+      if (player.aliases.some(alias => normalized.includes(" " + alias + " "))) {
+        showSlide(player.file, player.name);
+        activated = true;
+        break;
+      }
+    }
+
+    if (subtitlesEnabled && combined) {
+      setSubtitle(combined, activated);
+    }
+  };
+
+  try { recognition.start(); } catch(e) {}
+}
+</script>
+
+</body>
+</html>
